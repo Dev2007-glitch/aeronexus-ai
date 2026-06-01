@@ -1,298 +1,414 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, X, Minus, Send, Sparkles } from "lucide-react";
-import type { Role } from "@/lib/auth";
+
+import {
+  Bot,
+  X,
+  Minus,
+  Send,
+  Sparkles,
+} from "lucide-react";
+
 import ReactMarkdown from "react-markdown";
 
-interface Msg { id: number; role: "user" | "ai"; text: string; }
+import type { Role } from "@/lib/auth";
+
+interface Msg {
+  id: number;
+  role: "user" | "ai";
+  text: string;
+}
 
 interface Props {
-  persona: { name: string; intro: string; suggestions: string[] };
+  persona: {
+    name: string;
+    intro: string;
+    suggestions: string[];
+  };
+
   role: Role;
+
   roleColor: string;
 }
 
+export function AIAssistant({
+  persona,
+  roleColor,
+}: Props) {
 
-export function AIAssistant({ persona, role, roleColor }: Props) {
-  const [open, setOpen] = useState(false);
-  const [minimized, setMinimized] = useState(false);
-  const [maximized, setMaximized] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([{ id: 1, role: "ai", text: persona.intro }]);
-  const [input, setInput] = useState("");
-  const [languageMode, setLanguageMode] = useState("auto");
-  const [typing, setTyping] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] =
+    useState(false);
+
+  const [minimized, setMinimized] =
+    useState(false);
+
+  const [maximized, setMaximized] =
+    useState(false);
+
+  const [input, setInput] =
+    useState("");
+
+  const [typing, setTyping] =
+    useState(false);
+
+  const [msgs, setMsgs] =
+    useState<Msg[]>([
+      {
+        id: 1,
+        role: "ai",
+        text: persona.intro,
+      },
+    ]);
+
+  const endRef =
+    useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMsgs([{ id: 1, role: "ai", text: persona.intro }]);
-  }, [persona.intro]);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+    endRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
 
-  const detectLanguage = (text: string) => {
+  }, [msgs, typing]);
 
-  const lower = text.toLowerCase();
+  const detectLanguage = (
+    text: string
+  ) => {
 
-  if (
-    lower.includes("namaste") ||
-    lower.includes("kaise") ||
-    lower.includes("mai") ||
-    lower.includes("mera")
-  ) {
-    return "hindi";
-  }
+    const lower =
+      text.toLowerCase();
 
-  if (
-    lower.includes("hola") ||
-    lower.includes("gracias")
-  ) {
-    return "spanish";
-  }
+    // Hindi
+    if (
+      lower.includes("kaise ho") ||
+      lower.includes("namaste") ||
+      lower.includes("aap") ||
+      lower.includes("mai")
+    ) {
+      return "hindi";
+    }
 
-  if (
-    lower.includes("miru") ||
-    lower.includes("ela") ||
-    lower.includes("unnaru")
-  ) {
-    return "telugu";
-  }
+    // Telugu
+    if (
+      lower.includes("miru") ||
+      lower.includes("ela unnaru") ||
+      lower.includes("bagunnara")
+    ) {
+      return "telugu";
+    }
 
-  return "english";
-};
+    // Spanish
+    if (
+      lower.includes("hola") ||
+      lower.includes("gracias")
+    ) {
+      return "spanish";
+    }
 
-const send = async (text: string) => {
-
-  if (!text.trim()) return;
-
-  const userMsg: Msg = {
-    id: Date.now(),
-    role: "user",
-    text,
+    return "english";
   };
 
-  setMsgs((m) => [...m, userMsg]);
+  const send = async (
+    customInput?: string
+  ) => {
 
-  setInput("");
+    const finalInput =
+      customInput || input;
 
-  setTyping(true);
+    if (!finalInput.trim())
+      return;
 
-   const lower = text.toLowerCase();
-   const detectedLanguage = detectLanguage(text);
+    const languageMode =
+      detectLanguage(
+        finalInput
+      );
 
- 
+    const userMsg: Msg = {
+      id: Date.now(),
+      role: "user",
+      text: finalInput,
+    };
 
-  try {
+    setMsgs((m) => [
+      ...m,
+      userMsg,
+    ]);
 
-    const response = await fetch(
-      "http://localhost:5000/api/ai/chat",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    setInput("");
+
+    setTyping(true);
+
+    try {
+
+      const response =
+        await fetch(
+          "http://localhost:5000/api/ai/chat",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              message:
+                finalInput,
+
+              languageMode,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      setTyping(false);
+
+      const aiMsg: Msg = {
+        id: Date.now() + 1,
+        role: "ai",
+        text:
+          data.reply ||
+          "No response from AI.",
+      };
+
+      setMsgs((m) => [
+        ...m,
+        aiMsg,
+      ]);
+
+    } catch (error) {
+
+      console.log(error);
+
+      setTyping(false);
+
+      setMsgs((m) => [
+        ...m,
+        {
+          id: Date.now() + 1,
+          role: "ai",
+          text:
+            "AI assistant failed to respond.",
         },
-       body: JSON.stringify({
-  message: text,
-  languageMode: detectedLanguage,
-}),
-      }
-    );
-
-    const data = await response.json();
-
-    setTyping(false);
-
-    setMsgs((m) => [
-      ...m,
-      {
-        id: Date.now(),
-        role: "ai",
-        text: data.reply,
-      },
-    ]);
-
-  } catch (error) {
-
-    console.log(error);
-
-    setTyping(false);
-
-    setMsgs((m) => [
-      ...m,
-      {
-        id: Date.now(),
-        role: "ai",
-        text: "AI assistant failed to respond.",
-      },
-    ]);
-
-  }
-
-};
+      ]);
+    }
+  };
 
   if (!open) {
+
     return (
-      <button onClick={() => { setOpen(true); setMinimized(false); }}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full grid place-items-center text-primary-foreground animate-pulse-glow"
-        style={{ background: "var(--gradient-primary)" }}
-        aria-label="Open AI assistant">
+
+      <button
+        onClick={() =>
+          setOpen(true)
+        }
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-cyan-500 text-white grid place-items-center shadow-2xl"
+      >
+
         <Bot className="h-6 w-6" />
+
       </button>
     );
   }
 
-return (
-  <div
-    className={`fixed z-50 glass-strong rounded-2xl shadow-2xl transition-all duration-300 flex flex-col animate-slide-in overflow-hidden ${
-      maximized
-        ? "top-4 left-4 w-[95vw] h-[95vh]"
-        : minimized
-        ? "bottom-6 right-6 w-72 h-14"
-        : "bottom-6 right-6 w-[420px] h-[650px] max-h-[85vh]"
-    }`}
-  >
+  return (
 
-    {/* HEADER */}
     <div
-      className={`flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-gradient-to-r ${roleColor}`}
+  className={`fixed z-50 rounded-2xl shadow-2xl bg-[#071224] flex flex-col overflow-hidden transition-all duration-300
+  ${
+    minimized
+      ? "bottom-6 right-6 w-[320px] h-[80px]"
+      : maximized
+      ? "top-4 left-4 w-[95vw] h-[95vh]"
+      : "bottom-6 right-6 w-[420px] h-[720px]"
+  }`}
     >
 
-      <div className="h-10 w-10 rounded-full bg-white/20 grid place-items-center backdrop-blur">
-        <Bot className="h-5 w-5 text-white" />
-      </div>
+      {/* HEADER */}
 
-      <div className="flex-1 min-w-0">
-        <div className="text-base font-semibold text-white truncate">
-          {persona.name}
+      <div
+        className={`flex items-center gap-3 px-4 h-[80px] bg-gradient-to-r ${roleColor}`}
+      >
+
+        <div className="h-10 w-10 rounded-full bg-white/20 grid place-items-center">
+
+          <Bot className="text-white h-5 w-5" />
+
         </div>
 
-        <div className="text-xs text-white/80 flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
-          Online
+        <div className="flex-1">
+
+          <div className="text-white font-bold">
+            {persona.name}
+          </div>
+
+          <div className="text-xs text-white/80">
+            Online
+          </div>
+
         </div>
+
+        <button
+  type="button"
+  onClick={() => {
+
+    setMaximized((prev) => !prev);
+
+    setMinimized(false);
+
+  }}
+  className="text-white text-lg cursor-pointer hover:scale-110 transition"
+>
+  □
+</button>
+
+       <button
+  type="button"
+  onClick={() => {
+
+    setMinimized((prev) => !prev);
+
+    setMaximized(false);
+
+  }}
+  className="text-white cursor-pointer hover:scale-110 transition"
+>
+
+          <Minus className="h-4 w-4" />
+
+        </button>
+
+        <button
+          onClick={() =>
+            setOpen(false)
+          }
+          className="text-white"
+        >
+
+          <X className="h-4 w-4" />
+
+        </button>
+
       </div>
 
-      {/* MAXIMIZE */}
-      <button
-        onClick={() => setMaximized((m) => !m)}
-        className="h-8 w-8 rounded-full grid place-items-center hover:bg-white/20 text-white transition"
-      >
-        {maximized ? "🗗" : "🗖"}
-      </button>
+      {!minimized && (
+        <>
 
-      {/* MINIMIZE */}
-      <button
-        onClick={() => setMinimized((m) => !m)}
-        className="h-8 w-8 rounded-full grid place-items-center hover:bg-white/20 text-white transition"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
+          {/* CHAT */}
 
-      {/* CLOSE */}
-      <button
-        onClick={() => setOpen(false)}
-        className="h-8 w-8 rounded-full grid place-items-center hover:bg-white/20 text-white transition"
-      >
-        <X className="h-4 w-4" />
-      </button>
-    </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
-    {!minimized && (
-      <>
-        {/* CHAT AREA */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4 bg-[#071224]">
-
-          {msgs.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${
-                m.role === "user"
-                  ? "justify-end"
-                  : "justify-start"
-              } animate-fade-up`}
-            >
+            {msgs.map((m) => (
 
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-7 shadow-lg ${
+                key={m.id}
+                className={`flex ${
                   m.role === "user"
-                    ? "bg-cyan-500 text-white rounded-br-sm"
-                    : "bg-slate-800 text-slate-100 rounded-bl-sm"
+                    ? "justify-end"
+                    : "justify-start"
                 }`}
               >
 
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-7 ${
+                    m.role === "user"
+                      ? "bg-cyan-500 text-white"
+                      : "bg-slate-800 text-white"
+                  }`}
+                >
+
                   <ReactMarkdown>
                     {m.text}
                   </ReactMarkdown>
+
                 </div>
 
               </div>
-            </div>
-          ))}
-
-          {typing && (
-            <div className="flex justify-start">
-              <div className="bg-slate-800 rounded-2xl px-4 py-3 flex gap-1">
-                <span
-                  className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <span
-                  className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <span
-                  className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div ref={endRef} />
-        </div>
-
-        {/* SUGGESTIONS */}
-        {msgs.length <= 2 && (
-          <div className="px-4 py-2 flex flex-wrap gap-2 bg-[#071224]">
-
-            {persona.suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => send(s)}
-                className="text-xs rounded-full bg-slate-800 px-3 py-1.5 hover:bg-cyan-500/20 flex items-center gap-1 transition"
-              >
-                <Sparkles className="h-3 w-3 text-cyan-400" />
-                {s}
-              </button>
             ))}
+
+            {typing && (
+
+              <div className="flex justify-start">
+
+                <div className="bg-slate-800 rounded-2xl px-4 py-3 flex gap-1">
+
+                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" />
+
+                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
+
+                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
+
+                </div>
+
+              </div>
+            )}
+
+            <div ref={endRef} />
+
           </div>
-        )}
 
-        {/* INPUT */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
-          className="p-4 border-t border-border/30 flex gap-3 bg-[#071224]"
-        >
+         
 
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything..."
-            className="flex-1 rounded-full bg-slate-900 border border-slate-700 px-5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
+          {/* INPUT */}
 
-          <button
-            type="submit"
-            className="h-12 w-12 rounded-full grid place-items-center text-white bg-cyan-500 hover:scale-105 transition"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              send();
+            }}
+           className="p-4 flex gap-3 border-t border-white/10 bg-[#071224] sticky bottom-0"
           >
-            <Send className="h-5 w-5" />
-          </button>
 
-        </form>
-      </>
-    )}
-  </div>
-);
+            <input
+              value={input}
+              onChange={(e) =>
+                setInput(
+                  e.target.value
+                )
+              }
+              placeholder="Ask anything..."
+              className="flex-1 rounded-full bg-slate-900 border border-slate-700 px-5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+
+            <button
+              type="submit"
+              className="h-12 w-12 rounded-full bg-cyan-500 text-white grid place-items-center hover:scale-105 transition"
+            >
+
+              <Send className="h-5 w-5" />
+
+            </button>
+
+          </form>
+
+           {/* SUGGESTIONS */}
+
+          <div className="px-4 py-2 flex flex-wrap gap-2">
+
+            {persona.suggestions.map(
+              (s) => (
+
+                <button
+                  key={s}
+                  onClick={() =>
+                    send(s)
+                  }
+                  className="text-xs rounded-full bg-slate-800 px-3 py-2 text-white flex items-center gap-1 hover:bg-cyan-500/20 transition"
+                >
+
+                  <Sparkles className="h-3 w-3 text-cyan-400" />
+
+                  {s}
+
+                </button>
+              )
+            )}
+
+          </div>
+
+        </>
+      )}
+    </div>
+  );
 }
