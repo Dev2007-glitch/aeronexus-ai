@@ -11,6 +11,6 @@ react-router-dom
 tailwindcss
 typescript
 vite
-@tanstack/react-router
+tanstack/react-router
 lucide-react
 react-markdown
