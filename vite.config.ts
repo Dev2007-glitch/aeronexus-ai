@@ -22,15 +22,9 @@ export default defineConfig({
 
   plugins: [react()],
 
-  server: {
-
-    host: "0.0.0.0",
-
-    port: 5173,
-
-    allowedHosts: [
-      "aeronexus-ai.onrender.com",
-    ],
+    
+server: {
+  port: 8080,
 
   },
 
