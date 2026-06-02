@@ -35,3 +35,4 @@ dist
 .env
 .tanstack/tmp
 .vercel
+.env*
