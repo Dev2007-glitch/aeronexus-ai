@@ -1,0 +1,16 @@
+express
+mongoose
+cors
+dotenv
+jsonwebtoken
+bcryptjs
+groq-sdk
+react
+react-dom
+react-router-dom
+tailwindcss
+typescript
+vite
+@tanstack/react-router
+lucide-react
+react-markdown
