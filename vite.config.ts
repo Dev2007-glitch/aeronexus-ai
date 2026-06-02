@@ -1,11 +1,16 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react'; // or '@vitejs/plugin-vue' depending on your framework
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [react()],
-  root: 'src',            // 1. Tells Vite to look inside the /src folder for index.html
+  plugins: [
+    TanStackRouterVite(), // This automatically builds your routes!
+    react(),
+    tsconfigPaths(),
+  ],
   build: {
-    outDir: '../dist',    // 2. Places the final build folder back into the main root directory
-    emptyOutDir: true,    // 3. Cleans up old build files before creating new ones
+    target: 'esnext',
+    minify: 'esbuild',
   },
 });
