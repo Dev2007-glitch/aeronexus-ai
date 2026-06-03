@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
 export type Role = "passenger" | "pilot" | "crew" | "maintenance" | "security" | "admin";
 
@@ -21,7 +22,7 @@ const Ctx = createContext<AuthCtx | null>(null);
 const KEY = "aeronexus.user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: "+1 (555) 010-" + Math.floor(1000 + Math.random() * 9000),
     };
     setUser(u);
+    try { localStorage.setItem(KEY, JSON.stringify(u)); } catch { /* noop */ }
   };
 
   const logout = () => {

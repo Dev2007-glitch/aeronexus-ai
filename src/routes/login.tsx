@@ -50,10 +50,11 @@ function LoginPage() {
 
   try {
 
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const endpoint =
   mode === "signup"
-    ? "http://localhost:5000/api/auth/signup"
-    : "http://localhost:5000/api/auth/login";
+    ? `${apiUrl}/api/auth/signup`
+    : `${apiUrl}/api/auth/login`;
 
 const response = await fetch(endpoint, {
   method: "POST",

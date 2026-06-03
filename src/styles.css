@@ -1,6 +1,6 @@
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
+@source "../src";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -139,3 +139,11 @@
 .animate-pulse-glow { animation: pulse-glow 2s infinite; }
 .animate-fade-up { animation: fade-up 0.4s ease-out both; }
 .animate-slide-in { animation: slide-in-right 0.35s ease-out both; }
+
+/* Ensure form controls remain interactive if an overlay is present */
+input, textarea, select, button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
+}
+
